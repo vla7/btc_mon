@@ -1,9 +1,11 @@
 import json
+
 import requests
 
 from typing import List, Optional
 from pydantic import BaseModel
 from pathlib import Path
+from app.logger import logging
 
 
 class Transaction(BaseModel):
@@ -66,7 +68,7 @@ class BtcTransactions:
         url = self.URL.format(BTC_WALLET=self.wallet)
         response = requests.get(url)
         if response.status_code != 200:
-            print(f"Bad response code {response.status_code}")
+            logging.info(f"Bad response code {response.status_code}")
             return
 
         result = response.json()
