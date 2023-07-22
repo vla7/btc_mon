@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  btc_mon:
+    env_file:
+      - prod.env
+    image: vlad7rpp/btc_mon:latest
+    container_name: btc_mon
+    restart: unless-stopped
+    volumes:
+      - /tmp/cache/:/opt/btc_mon/cache
+
+networks:
+  default:
+    name: btc_mon
