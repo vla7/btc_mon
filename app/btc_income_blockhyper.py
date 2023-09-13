@@ -1,12 +1,14 @@
 import json
-
-from typing import List
-from pydantic import BaseModel
+import urllib
 from pathlib import Path
-from blockcypher import get_address_full
+from time import sleep
+from typing import List
 
-from app.logger import logging
+from blockcypher import get_address_full, get_transaction_details
+from pydantic import BaseModel
+
 from app.config import BTC_WALLET, CONFIRMATIONS, BLOCK_HYPER_TOKEN
+from app.logger import logging
 
 
 class Output(BaseModel):
@@ -20,6 +22,7 @@ class Transaction(BaseModel):
     confirmations: int = 0
     block_index: int = -1
     outputs: List[Output]
+    next_outputs: str = None
 
     @property
     def result(self):
@@ -76,6 +79,23 @@ class BtcTransactions:
                 and tx.confirmations > CONFIRMATIONS
                 and tx.hash not in prev_txs
             ):
+                current_iteration_tx = tx
+                while current_iteration_tx.next_outputs:
+                    if tx.result:
+                        break
+
+                    sleep(3)
+
+                    qs = urllib.parse.parse_qs(current_iteration_tx.next_outputs)
+
+                    outstart = qs['outstart']
+                    limit = qs['limit']
+
+                    current_iteration_result = get_transaction_details(tx.hash, limit=limit, tx_output_offset=outstart)
+                    current_iteration_tx = Transaction.model_validate(current_iteration_result)
+
+                    tx.outputs += current_iteration_tx.outputs
+
                 new_transactions.append(tx)
                 logging.info(tx)
 
